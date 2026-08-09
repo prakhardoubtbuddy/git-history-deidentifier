@@ -1,0 +1,14 @@
+# Never commit runtime data or secrets — only the tooling belongs in git.
+config.env
+work/
+*.tar.gz
+*.sha256
+# defensive: never allow the sensitive artifact types near the repo
+mailmap*.txt
+replace-text*.txt
+identity-key*.json
+*identity*.json
+reports/
+clones/
+scrubbed/
+delivery/
