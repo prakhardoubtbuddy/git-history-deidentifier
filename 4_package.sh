@@ -14,7 +14,8 @@ for r in "$SRC"/*/; do
   git -C "$dest" reflog expire --all --expire=now 2>/dev/null || true
   git -C "$dest" remote remove origin 2>/dev/null || true
   git -C "$dest" gc --prune=now --quiet 2>/dev/null || true
-  rn=$(git -C "$dest" log --all --format='%an%n%cn' | sort -u | grep -vcE '^Contributor [0-9]+$|^$')
+  # grep -c exits 1 when the count is 0 (the GOOD case); '|| true' keeps 'set -e' from aborting.
+  rn=$(git -C "$dest" log --all --format='%an%n%cn' | sort -u | grep -vcE '^Contributor [0-9]+$|^$' || true)
   rem=$(git -C "$dest" remote -v | wc -l)
   commits=$(git -C "$dest" rev-list --all --count)
   authors=$(git -C "$dest" log --all --format='%an' | sort -u | grep -c '^Contributor' || true)

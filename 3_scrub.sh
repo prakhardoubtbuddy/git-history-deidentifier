@@ -17,6 +17,9 @@ for d in "$CLONES"/*.git; do
   rm -rf "$dest"; git clone -q "$d" "$dest"
   ( cd "$dest" && git-filter-repo --force --prune-empty=never --prune-degenerate=never \
       --mailmap "$MM_ABS" --replace-text "$RT_ABS" --blob-callback "$CB" ) >/dev/null 2>&1
-  rn=$(git -C "$dest" log --all --format='%an%n%cn' | sort -u | grep -vcE '^Contributor [0-9]+$|^$')
+  # NOTE: grep -c exits 1 when the count is 0 -- which is the GOOD case (no residual real
+  # names). Without the '|| true' that exit status trips 'set -e' and aborts the whole run
+  # after the first perfectly-clean repo.
+  rn=$(git -C "$dest" log --all --format='%an%n%cn' | sort -u | grep -vcE '^Contributor [0-9]+$|^$' || true)
   echo "[scrubbed] $base commits=$(git -C "$dest" rev-list --all --count) resid_names=$rn"
 done
