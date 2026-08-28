@@ -29,6 +29,7 @@ source config.env
 ./3_scrub.sh           # build mailmap + rewrite history -> $WORK/scrubbed
 ./4_package.sh         # harden + tar -> $WORK/delivery.tar.gz (+ .sha256)
 ./5_verify.sh          # gitleaks gate over the staged delivery
+./6_verify_names.py $WORK/delivery/repos $WORK/clones tokens.txt   # name + syntax gate
 ```
 
 `KEY_IN=prev/identity-key.json` on `3_scrub.sh` reuses numbering across batches so the
@@ -47,8 +48,34 @@ The **outputs** are sensitive and are git-ignored — never commit them:
 - `replace-text.txt` / `reports/` — **actual secret values** in plaintext
 - `clones/` — the **original** repos with live credentials and real names
 - `config.env` — your access token
+- `tokens.txt` — the org/project/host names you are removing (a name list is itself PII)
 
 This repository is the **tooling only**. Run it against your own data; keep `work/` local.
+
+## Three leak surfaces, not one
+
+`--mailmap` rewrites **commit metadata only**. Secrets scrubbing (`2_scan_secrets.sh`)
+covers **secret values only**. Neither touches org names, project names or internal
+hostnames — those need to be handled explicitly, and they hide in three different
+places, each requiring a different mechanism:
+
+| surface | mechanism |
+|---|---|
+| commit messages | `git-filter-repo --replace-message` |
+| file contents | `git-filter-repo --replace-text` |
+| file paths | `git-filter-repo --filename-callback` |
+
+Enumerate all three **before** the first pass. Discovering them one at a time means one
+full history rewrite per discovery, and on a large estate that is hours each.
+
+**Replacements must be hyphen-free.** A name is often substituted *inside* an identifier,
+so `acme-corp` produces `class Acmeacme-corpApi` — which no longer parses. Use
+`acmecorp`. `6_verify_names.py` runs `php -l` precisely because a name-only check passes
+a tree that will not compile.
+
+**Renaming paths is not optional.** Once file *contents* are rewritten, any
+filename↔classname convention (PSR-4, and most autoloaders) is already broken until the
+paths follow. Leaving paths alone does not keep the tree working — it keeps it broken.
 
 ## Notes on residual gitleaks findings
 
