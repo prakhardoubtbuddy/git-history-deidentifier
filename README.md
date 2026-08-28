@@ -73,6 +73,13 @@ so `acme-corp` produces `class Acmeacme-corpApi` — which no longer parses. Use
 `acmecorp`. `6_verify_names.py` runs `php -l` precisely because a name-only check passes
 a tree that will not compile.
 
+**A denylist result of CLEAN means "none of the names I thought of".** Scanning for
+names you already know cannot find a name nobody told you about. Where the value space
+is enumerable -- hostnames especially -- invert it: allowlist what is known-public and
+replace *everything else*, recognised or not, with a stable pseudonym. Distinct values
+stay distinct, so the recipient can still tell them apart. Expect a small false-positive
+cost; it is far cheaper than a missed customer domain.
+
 **Renaming paths is not optional.** Once file *contents* are rewritten, any
 filename↔classname convention (PSR-4, and most autoloaders) is already broken until the
 paths follow. Leaving paths alone does not keep the tree working — it keeps it broken.
