@@ -84,6 +84,67 @@ cost; it is far cheaper than a missed customer domain.
 filename↔classname convention (PSR-4, and most autoloaders) is already broken until the
 paths follow. Leaving paths alone does not keep the tree working — it keeps it broken.
 
+## Two failures that produce a silently wrong result
+
+Both were found the hard way, on an estate where every earlier gate reported clean.
+
+### A secret can be base64-encoded, and then nothing sees it
+
+An API-doc example embedded a session payload in a URL:
+
+```
+auth=eyJzZXNzaW9uSWQiOiJ...
+```
+
+Decoded, it held a live Twilio account SID and auth token. The value never
+appears as plaintext, so `--replace-text` (literal bytes) never matched it, and
+`blob_cb.py` never matched it either -- its JWT rule wants three dot-separated
+segments and this is a bare base64 blob. `gitleaks` decodes, so it kept
+reporting a finding that no amount of re-scrubbing could remove.
+
+Worse, the structured formats are *deliberately* skipped by
+`build_replace_text.py` because `blob_cb.py` is supposed to cover them -- but
+`blob_cb.py` only ever sees plaintext. Encoded, an AWS key or a Twilio SID is
+covered by nothing at all.
+
+Run `lib/b64_variants.py` over the gitleaks reports (not just the literal list)
+and append its output to `replace-text.txt`.
+
+### Literal name replacement corrupts source at scale
+
+`--replace-text` matches substrings. A literal rule `Marsh==>Contributor`
+rewrites `Marshall` and `Marshy`; `Vance==>Contributor` rewrites `Advance`. On one estate that was 270 mangled
+identifiers from 74 surnames, and `-webkit-animation` became
+`-webkit-aLee Vancetion` in a third-party minified stylesheet -- a repo that
+still passes a name-only gate while no longer being valid CSS.
+
+Use `lib/make_name_rules.py`, which emits one word-boundary alternation:
+
+```
+regex:(?i)\b(?:Dana Marsh|Robin Rook|Marsh|Calder|...)\b==>Contributor
+```
+
+Three things that rule gets right and a hand-written list usually does not:
+
+- **`\b` anchors** -- `Marshall` and `Advance` survive, `Dana Marsh` does not.
+- **One merged alternation.** `filter-repo` applies every regex to every blob, so
+  ~340 separate rules cost about **9x** the wall-clock of a single alternation.
+- **Multi-word names first.** Alternation is leftmost-first, so `Robin Rook`
+  must precede `Robin`. That is also how you remove a person whose surname is
+  an ordinary word (`Rook`, `Frost`) while keeping that word out of the bare-token
+  list -- `--exclude rook` still removes the human.
+
+Pass `--extra` for anyone not in `identity-key.json`. The key is built from commit
+authorship, so it contains only people who committed; the account owner whose name
+is in every seed fixture never authored anything and is invisible to it.
+
+### Also: `4_package.sh` inherits its directory names
+
+The staged repos keep whatever `clones/` called them. If the clone step named
+them `<account>_<group>_<subgroup>_<project>`, the account and group names end up
+in every path in the delivered tar -- after all three leak surfaces have been
+scrubbed clean. Rename to the bare project name before packaging.
+
 ## Notes on residual gitleaks findings
 
 After scrubbing, a `gitleaks` re-scan typically still reports matches — these are
