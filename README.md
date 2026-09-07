@@ -64,8 +64,9 @@ places, each requiring a different mechanism:
 | commit messages | `git-filter-repo --replace-message` |
 | file contents | `git-filter-repo --replace-text` |
 | file paths | `git-filter-repo --filename-callback` |
+| **binary file contents** | `git-filter-repo --blob-callback` — `--replace-text` **cannot reach these**, see below |
 
-Enumerate all three **before** the first pass. Discovering them one at a time means one
+Enumerate all four **before** the first pass. Discovering them one at a time means one
 full history rewrite per discovery, and on a large estate that is hours each.
 
 **Replacements must be hyphen-free.** A name is often substituted *inside* an identifier,
@@ -84,9 +85,9 @@ cost; it is far cheaper than a missed customer domain.
 filename↔classname convention (PSR-4, and most autoloaders) is already broken until the
 paths follow. Leaving paths alone does not keep the tree working — it keeps it broken.
 
-## Two failures that produce a silently wrong result
+## Failures that produce a silently wrong result
 
-Both were found the hard way, on an estate where every earlier gate reported clean.
+All were found the hard way, on an estate where every earlier gate reported clean.
 
 ### A secret can be base64-encoded, and then nothing sees it
 
@@ -144,6 +145,77 @@ The staged repos keep whatever `clones/` called them. If the clone step named
 them `<account>_<group>_<subgroup>_<project>`, the account and group names end up
 in every path in the delivered tar -- after all three leak surfaces have been
 scrubbed clean. Rename to the bare project name before packaging.
+
+### `--replace-text` silently skips every binary blob
+
+Git calls a blob binary if there is a NUL byte in the first 8000 bytes, and
+`--replace-text` then passes it through untouched — **same blob SHA in, same blob SHA
+out**, no warning, nothing in the run summary. Verified with a controlled test: the same
+string in `txt.txt` was replaced, in `bin.dat` it was not.
+
+So on any estate scrubbed with `--replace-text` alone, every name, path and secret inside
+an image, keystore, shortcut, archive or compiled artefact is **still there**. Real
+examples: PNG `tEXt` chunks holding `D:\<vendor>\<client>\Website\...` from the designer's
+machine — including, where a source file was reused between jobs, *another client's*
+project name; a `.lnk` Windows shortcut carrying a name; a `.jks` keystore carrying its
+own alias next to its password in a `build.gradle`.
+
+Use `lib/strip_image_metadata.py` as a `--blob-callback`. It parses the container and
+drops whole metadata sections. **Do not pattern-replace bytes inside an image**: compressed
+pixel data is effectively random, so a path-shaped regex matches by coincidence and
+corrupts the picture — same length, still opens, wrong image. That mistake silently
+damaged 59 of 920 images here and was caught only by diffing every image against the
+original. Compare before/after verdicts, don't just check the file still parses.
+
+### Rules derived from the working tree miss the history
+
+The checkout shows the *last* spelling of a thing. `--replace-text` rules built by
+grepping the tree caught `www.example.ca` from `strings.xml` and missed the other spellings
+that exist only in older commits of `build.gradle` — leaving **667 historical blobs** still
+leaking after a pass that reported success and produced a visibly clean checkout.
+
+Derive rules from `git cat-file --batch-all-objects`, and verify the same way. A sample
+ships with full history; anything the tree no longer shows is one `git checkout` away.
+
+### `commit-map` is cumulative, not per-run
+
+Re-running `filter-repo` on an already-filtered repo **rewrites** `commit-map` so it still
+keys off the **original** SHAs. Composing the maps from three passes therefore applies the
+mapping three times and yields IDs that resolve to nothing — here, 0 of 200 sampled.
+
+If anything outside the repo joins to it by commit SHA, remap from the **final** map alone
+and then *test the join* against the rewritten repo. Nothing else catches this: the file
+is present, correctly formatted, the right length, and completely wrong.
+
+### A name gate never asks who else is in the data
+
+Every gate here answers "did we remove the developers?". None asks "whose data is sitting
+in the repository?" On an estate that passed all of them, history held real payment card
+numbers with CVVs in committed logs, and CSV dumps with six figures of consumer names and
+phone numbers. Developer emails *had* been scrubbed — which is exactly why an email-based
+check returned zero and looked like proof.
+
+Plain-text credentials fail the same way. `storePassword 'x'` and a database URL with a
+password in it are not AWS keys or PEM blocks, so a format-based secret scanner reports
+nothing.
+
+Before packaging, scan every object for: card numbers (Luhn-checked, standard test
+numbers excluded) and CVV fields; logs and dumps holding many rows of names, phones or
+emails; password/secret assignments in config whose value is not a placeholder; and
+absolute paths inside binaries.
+
+Build artefacts, keystores, upload folders and runtime logs should be dropped from
+history outright — no training value, all of the risk.
+
+`7_scan_history.py` does exactly that. Validated against a known-dirty estate, where it
+independently found both CRM dumps (100,000 and 12,350 rows), the cardholder data and the
+committed Windows shortcut.
+
+**Read its output as a triage list, not a verdict.** It reported ~1,100 plain-text
+credential hits across two repos; most are false positives — a `token:` assigned from
+another variable, a long hash, a fixture. That is the intended bias. A missed customer
+domain costs more than an afternoon of triage, and the failure you cannot afford here is
+a reassuring `CLEAN`. Expect roughly 10 minutes per 10k commits; it reads every object.
 
 ## Notes on residual gitleaks findings
 
