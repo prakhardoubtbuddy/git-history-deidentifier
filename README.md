@@ -217,6 +217,19 @@ another variable, a long hash, a fixture. That is the intended bias. A missed cu
 domain costs more than an afternoon of triage, and the failure you cannot afford here is
 a reassuring `CLEAN`. Expect roughly 10 minutes per 10k commits; it reads every object.
 
+## Audio
+
+`audio/` applies the same discipline to call recordings: find personal information that
+is spoken, replace it with a beep, then verify against the finished audio rather than
+against the plan. See `audio/README.md`.
+
+The failure that matters there is the same one as here, in a new costume: a transcript
+too degraded to read still produces a confident-looking result, a PII detector reading it
+finds nothing, and the file ships looking finished. `audio/check_transcript_quality.py`
+gates on script purity, mixed-script words, invalid code points and dead segments --
+none of which require knowing the language, and all of which catch what a
+words-per-minute score does not.
+
 ## Notes on residual gitleaks findings
 
 After scrubbing, a `gitleaks` re-scan typically still reports matches — these are
