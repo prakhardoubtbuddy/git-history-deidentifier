@@ -94,6 +94,13 @@ Rebuild archives from the masked files and assert that no entry is byte-identica
 input file. Same failure as `--replace-text` skipping binary blobs: something treated the
 container as one opaque object and never looked inside.
 
+## Sealed and signed artifacts
+
+De-identifying a bundle that carries an integrity digest breaks the seal, and the recipient
+finds out before you do. Re-seal, then separately prove the RESULT did not move. See
+[SEALED.md](SEALED.md) — which also covers why withholding a scoring script does not keep
+its thresholds internal.
+
 ## Mask to a copy, never in place
 
 The first image pass overwrote its inputs, so a bad pass was unrecoverable and the second
