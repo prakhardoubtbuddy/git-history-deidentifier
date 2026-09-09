@@ -230,6 +230,18 @@ gates on script purity, mixed-script words, invalid code points and dead segment
 none of which require knowing the language, and all of which catch what a
 words-per-minute score does not.
 
+## Medical imaging
+
+`dicom/` applies the same discipline to DICOM studies. The failure mode is again the
+same one in a new costume: the obvious surface is handled and the identical thing one
+level down is missed. Here the patient ID lives *inside* the StudyInstanceUID, and the
+UIDs that matter most live *inside* nested sequences — where remapping only the top
+level both leaves the identifiers and silently breaks every image reference.
+
+`dicom/verify_deid.py` checks the output four ways, including comparing the
+dangling-reference count against the original: a count that CHANGED means the remap
+broke the study.
+
 ## Notes on residual gitleaks findings
 
 After scrubbing, a `gitleaks` re-scan typically still reports matches — these are
