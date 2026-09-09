@@ -242,6 +242,27 @@ level both leaves the identifiers and silently breaks every image reference.
 dangling-reference count against the original: a count that CHANGED means the remap
 broke the study.
 
+## Exported operational data
+
+`ops/` applies the same discipline to chat, board and workstream exports. The failure is
+the same one in yet another costume, and it landed three times in a single engagement:
+**the verification shared the fix's blind spot and confirmed it.** The masker OCR'd the
+image it held in memory and saved it lossily; detection and the stop-condition both ran
+at native resolution; the replacement matched exact single-space literals and so did its
+check. Each pass reported clean, and each was wrong.
+
+Two findings there generalise beyond text:
+
+- **OCR cannot certify a photograph of a screen.** 42% of one attachment set were phone
+  photos rather than screenshots, and a database name plainly legible to a human read as
+  `FADIC` at every scale, page-segmentation mode and inversion. A clean OCR result on
+  such an image is not evidence — before masking *or* after.
+- **An archive is a container, not a file.** The attachment `.zip`s were copied through
+  untouched, so the delivery carried a pristine unmasked copy of every image inside one.
+  Exactly the `--replace-text` binary blind spot, one level up.
+
+See `ops/README.md`.
+
 ## Notes on residual gitleaks findings
 
 After scrubbing, a `gitleaks` re-scan typically still reports matches — these are
