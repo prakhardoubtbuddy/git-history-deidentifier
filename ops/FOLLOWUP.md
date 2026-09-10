@@ -111,3 +111,25 @@ that was taken rather than an oversight: **if two recipients compare files, matc
 make any overlap obvious immediately.** That is the trade, and it should be made in the
 open by whoever owns the commercial relationship, not silently by the person writing the
 export script.
+
+### Keep a ledger of who holds what
+
+Slices of one corpus overlap, and pseudonymisation makes the overlap invisible. Two
+recipients can hold the same item under the same code without anyone noticing, because
+each delivery was correct in isolation and nothing joins them.
+
+The moment you cannot answer *"who already has this item, and in what form?"* you cannot
+answer the questions that follow it — whether anything was promised exclusively, whether a
+withdrawal is even possible, what a given recipient would see if they compared notes with
+another. Those questions arrive from the commercial side, not the technical one, and they
+arrive late.
+
+So maintain one record, updated whenever anything ships, that says per recipient: what they
+received, in what form (metadata, or the underlying artifact), and when. Derive it from the
+delivery artifacts rather than from memory — the counts drift otherwise, and a slice that
+was built but never sent looks identical to one that shipped.
+
+Building that record for the first time is also the cheapest audit available. On this estate
+it immediately surfaced a completed package that had been sitting unsent for a month, and a
+supplier appearing twice under two submissions that were being added together as though they
+were one.
