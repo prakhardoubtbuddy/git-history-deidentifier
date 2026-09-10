@@ -94,6 +94,13 @@ Rebuild archives from the masked files and assert that no entry is byte-identica
 input file. Same failure as `--replace-text` skipping binary blobs: something treated the
 container as one opaque object and never looked inside.
 
+## Follow-up deliveries
+
+The second file sent to the same recipient is the dangerous one — it gets built from your
+working copy, which is not what they hold. See [FOLLOWUP.md](FOLLOWUP.md), which also
+covers reconstructing a pseudonym map you no longer have, and proving the reconstruction
+rather than trusting it.
+
 ## Sealed and signed artifacts
 
 De-identifying a bundle that carries an integrity digest breaks the seal, and the recipient
