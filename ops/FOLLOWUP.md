@@ -54,8 +54,8 @@ worth as much as its proof, and without one it is a guess that looks like a key:
    batch already delivered, whose own manifest survives. Agreement on every one of those
    is the evidence that the whole reconstruction is sound.
 3. **Sanity-check against a second source** if one exists. Expect naming variants rather
-   than contradictions: on one estate 178 of 246 matched a separate internal record
-   verbatim and the remaining 68 differed only by a group prefix — a formatting
+   than contradictions: on one estate the great majority matched a separate internal
+   record verbatim and the residue differed only by a leading group prefix — a formatting
    difference, not different objects. Chase the residue until you can say which it is.
 
 Then treat it as what it is: `chmod 600`, out of version control, out of every published
@@ -65,3 +65,49 @@ directory. A recovered key is exactly as sensitive as the original.
 names inside the delivered code may differ from the names in the catalogue — two
 substitutions applied at different stages. Tracing a delivered item back to its origin
 then needs both maps, and having only one produces a confident wrong answer.
+
+## A second recipient, from the same corpus
+
+Sooner or later a different recipient gets a different slice of the same data. Two
+decisions arrive together, and the instinct is wrong on both.
+
+### Strip the columns that describe how the corpus was assembled
+
+Pseudonymising the identifiers is the visible half. The half that gets missed is a
+structural column — `batch`, `lot`, `source`, `cohort`, whatever the pipeline called it —
+that survives untouched because it holds no names. It does not need names. Counting rows
+per distinct value tells the recipient how many items came from which acquisition, and
+therefore how the corpus was built and roughly what it cost to build.
+
+That happened here: the first spreadsheet sent to one recipient carried the internal batch
+labels in two columns. Only a later file masked them to a constant, and by then the
+information had gone out. Set those columns to a single value — the recipient's own name
+works — and assert it:
+
+```python
+assert not any('batch-' in str(v) for r in rows for v in r.values())
+```
+
+The same applies to a group key built by concatenating that column onto something else.
+
+### One pseudonym space, not one per recipient
+
+Minting fresh codes per recipient feels safer. Measure what it actually buys before paying
+for it.
+
+**It buys less than it appears.** Both files carry the same measurements — sizes, counts,
+first and last timestamps. Those pair rows exactly, whatever the identifiers say. Fresh
+codes raise the effort from *obvious at a glance* to *a deliberate join*; they do not make
+the slices unlinkable, and describing them as if they do is overselling.
+
+**It costs accuracy on your side.** Every namespace is another key to hold, another
+translation to get right, and another way to answer confidently and wrongly. Where source
+was scrubbed as well as catalogued there are already two layers; a third is not free. On
+this estate, having only one of two layers to hand had already produced a wrong answer the
+same week the question came up.
+
+So prefer one space, one key, one lookup — and write the residual risk down as a decision
+that was taken rather than an oversight: **if two recipients compare files, matching codes
+make any overlap obvious immediately.** That is the trade, and it should be made in the
+open by whoever owns the commercial relationship, not silently by the person writing the
+export script.
